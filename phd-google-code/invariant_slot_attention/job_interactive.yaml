@@ -1,0 +1,61 @@
+apiVersion: run.ai/v1
+kind: RunaiJob
+metadata:
+  name: invariant-sa-interactive
+  namespace: runai-imos-awei
+  labels:
+    priorityClassName: "build" # INTERACTIVE job (REMOVE for a TRAIN job)
+    user: awei
+spec:
+  template:
+    metadata:
+      labels:
+        user: awei
+        release: invariant-sa-interactive
+    spec:
+      schedulerName: runai-scheduler
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 158255
+        runAsGroup: 79821 # GID is imos-rcp-staff
+        fsGroup: 79821 # GID is imos-rcp-staff
+      containers:
+        - name: nvidia-jax-2310-py3
+          image: registry.rcp.epfl.ch/imos-awei/nvidia-jax-23.10-py3:latest
+          imagePullPolicy: Always
+          workingDir: /home/awei
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              git clone git@github.com:AmauryWEI/phd-google-code.git
+              cd phd-google-code
+              sleep infinity
+          env:
+            - name: WANDB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wandb-secret
+                  key: secret
+            - name: PVC_DIR
+              value: /mnt/runai-imos-awei-scratch/imos-staff/awei/
+            - name: TETROMINOES_ROOT_DIR
+              value: /mnt/runai-imos-awei-scratch/imos-staff/awei/datasets/Tetrominoes/
+            - name: CLEVR_ROOT_DIR
+              value: /mnt/runai-imos-awei-scratch/imos-staff/awei/datasets/CLEVR_with_masks/
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          volumeMounts:
+            - mountPath: /dev/shm
+              name: dshm
+            - mountPath: /mnt/runai-imos-awei-scratch/
+              name: runai-imos-awei-scratch
+      imagePullSecrets:
+        - name: awei-pull-robot-secret
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: runai-imos-awei-scratch
+          persistentVolumeClaim:
+            claimName: runai-imos-awei-scratch
