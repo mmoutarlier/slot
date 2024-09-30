@@ -26,6 +26,10 @@ import slot_attention.data as data_utils
 import slot_attention.model as model_utils
 import slot_attention.utils as utils
 
+import systconfig
+print(systconfig.get_paths()["purelib"])
+exit()
+
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("model_dir", "/tmp/set_prediction/",
